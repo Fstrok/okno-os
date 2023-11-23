@@ -541,6 +541,9 @@ KiSystemStartup(IN PLOADER_PARAMETER_BLOCK LoaderBlock)
         KeInitExceptions();
     }
 
+    DPRINT1("Cpu %u: Pcr = %p, Gdt = %p, Idt = %p, Tss = %p\n",
+            Cpu, Pcr, Pcr->GdtBase, Pcr->IdtBase, Pcr->TssBase);
+
     /* Acquire lock */
     while (InterlockedBitTestAndSet64((PLONG64)&KiFreezeExecutionLock, 0))
     {
@@ -571,6 +574,7 @@ KiSystemStartup(IN PLOADER_PARAMETER_BLOCK LoaderBlock)
 
     /* Raise to HIGH_LEVEL */
     KfRaiseIrql(HIGH_LEVEL);
+
 
     /* Machine specific kernel initialization */
     if (Cpu == 0) KiInitializeKernelMachineDependent(&Pcr->Prcb, LoaderBlock);
