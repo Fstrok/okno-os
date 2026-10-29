@@ -1,0 +1,47 @@
+name: Okno OS
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [i386, amd64]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q clang lld llvm gcc-mingw-w64 g++-mingw-w64 binutils-mingw-w64 flex bison ninja-build ccache
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ matrix.arch }}-${{ github.sha }}
+          restore-keys: ccache-${{ matrix.arch }}-
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE:FILEPATH=toolchain-clang.cmake \
+            -DARCH:STRING=${{ matrix.arch }} -DCMAKE_BUILD_TYPE=Debug -DENABLE_CCACHE=1
+
+      - name: Build
+        run: cmake --build build -- -k0
+
+      - name: ISO
+        run: cmake --build build --target bootcd
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: okno-${{ matrix.arch }}
+          path: |
+            build/bootcd.iso
+            build/livecd.iso
+          compression-level: 0
