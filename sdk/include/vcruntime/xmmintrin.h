@@ -531,14 +531,22 @@ do {                                              \
 
 /* Use inline functions on GCC/Clang */
 
-#if !HAS_BUILTIN(_mm_getcsr) && !defined(_MSC_VER)
+/* Clang 18+ provides these as MS header builtins under -fms-extensions,
+   but __has_builtin() reports them as absent */
+#if defined(__clang__) && __clang_major__ >= 18
+#define __CLANG_MS_SSE_BUILTINS 1
+#else
+#define __CLANG_MS_SSE_BUILTINS 0
+#endif
+
+#if !HAS_BUILTIN(_mm_getcsr) && !defined(_MSC_VER) && !__CLANG_MS_SSE_BUILTINS
 __INTRIN_INLINE_SSE unsigned int _mm_getcsr(void)
 {
     return __builtin_ia32_stmxcsr();
 }
 #endif
 
-#if !HAS_BUILTIN(_mm_setcsr) && !defined(_MSC_VER)
+#if !HAS_BUILTIN(_mm_setcsr) && !defined(_MSC_VER) && !__CLANG_MS_SSE_BUILTINS
 __INTRIN_INLINE_SSE void _mm_setcsr(unsigned int a)
 {
     __builtin_ia32_ldmxcsr(a);
@@ -1136,7 +1144,7 @@ __INTRIN_INLINE_SSE void _mm_stream_ps(float *__p, __m128 __a)
 #endif
 }
 
-#if !HAS_BUILTIN(_mm_sfence) && !defined(_MSC_VER)
+#if !HAS_BUILTIN(_mm_sfence) && !defined(_MSC_VER) && !__CLANG_MS_SSE_BUILTINS
 __INTRIN_INLINE_SSE void _mm_sfence(void)
 {
     __builtin_ia32_sfence();
