@@ -429,3 +429,4 @@ win32k -
 
 winmm -
   modules/rostests/winetests/winmm      # Synced to WineStaging-4.18
+dll/win32/netprofm              # Synced to Wine-11.20
