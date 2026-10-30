@@ -14,6 +14,7 @@
 PUBLIC __chkstk
 PUBLIC __alloca_probe
 PUBLIC __alloca_probe_16
+PUBLIC __alloca
 .code
 
     /* 16 byte aligned alloca probe
@@ -51,6 +52,8 @@ l1:
  */
 __chkstk:
 __alloca_probe:
+/* clang targeting i686-w64-mingw32 emits stack probes as calls to _alloca */
+__alloca:
 
     /* EAX = size to be allocated */
     /* save the ECX register */

@@ -58,4 +58,7 @@ list(APPEND VCSTARTUP_SOURCES
 # Startup library (linked into executables, linking to ucrtbase)
 add_library(vcstartup ${VCSTARTUP_SOURCES})
 target_link_libraries(vcstartup ${PSEH_LIB} libkernel32)
+if(ARCH STREQUAL "i386" AND CMAKE_C_COMPILER_ID STREQUAL "Clang" AND NOT MSVC)
+    target_link_libraries(vcstartup crtmathf)
+endif()
 target_include_directories(vcstartup PRIVATE  $<TARGET_PROPERTY:vcruntime,INTERFACE_INCLUDE_DIRECTORIES>)

@@ -96,6 +96,12 @@ set_source_files_properties(${MSVCRTEX_ASM_SOURCE} PROPERTIES COMPILE_DEFINITION
 add_asm_files(msvcrtex_asm ${MSVCRTEX_ASM_SOURCE})
 
 add_library(msvcrtex STATIC ${MSVCRTEX_SOURCE} ${msvcrtex_asm})
+
+# Out-of-line x86 float math for Clang, for modules that do not link msvcrtex (UCRT ones)
+if(ARCH STREQUAL "i386" AND CMAKE_C_COMPILER_ID STREQUAL "Clang" AND NOT MSVC)
+    add_library(crtmathf STATIC math/i386/mathf_ool.c)
+    add_dependencies(crtmathf psdk)
+endif()
 target_compile_definitions(msvcrtex PRIVATE _DLL _MSVCRTEX_)
 
 # msvcrtex depends on msvcrt and kernel32
