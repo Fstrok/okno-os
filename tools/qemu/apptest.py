@@ -44,7 +44,7 @@ def fetch(apps, cache):
     for a in apps:
         path = os.path.join(cache, a["file"])
         if not os.path.exists(path):
-            subprocess.run(["curl", "-sSfL", "--retry", "3", "-o", path + ".part", a["url"]], check=True)
+            subprocess.run(["curl", "-sSfL", "--retry", "5", "--retry-all-errors", "-o", path + ".part", a["url"]], check=True)
             os.rename(path + ".part", path)
 
 
