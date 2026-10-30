@@ -1,0 +1,10 @@
+# name	arch	url	kind	args	exe	check	wait   (see tools/qemu/apptest.py)
+putty	x86	https://the.earth.li/~sgtatham/putty/latest/w32/putty.exe	run			putty.exe	15
+7zip	x86	https://www.7-zip.org/a/7z2501.exe	install	/S	C:\Program Files\7-Zip\7zFM.exe	7zFM.exe	15
+notepadpp	x86	https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.8.1/npp.8.9.8.1.Installer.exe	install	/S	C:\Program Files\Notepad++\notepad++.exe	notepad++.exe	20
+python313	x86	https://www.python.org/ftp/python/3.13.17/python-3.13.17.exe	install-check	/quiet InstallAllUsers=1 TargetDir=C:\Python313 Include_test=0	C:\Python313\python.exe	-c "import ssl, sqlite3, ctypes"	0
+firefox115esr	x86	https://download.mozilla.org/?product=firefox-esr115-latest-ssl&os=win&lang=en-US	install	/S /InstallDirectoryPath=C:\FF115	C:\FF115\firefox.exe	firefox.exe	60
+firefox	x86	https://download.mozilla.org/?product=firefox-latest-ssl&os=win&lang=en-US	install	/S /InstallDirectoryPath=C:\FF	C:\FF\firefox.exe	firefox.exe	60
+putty64	x64	https://the.earth.li/~sgtatham/putty/latest/w64/putty.exe	run			putty.exe	15
+putty32-on-x64	x64	https://the.earth.li/~sgtatham/putty/latest/w32/putty.exe	run			putty.exe	15
+python313-x64	x64	https://www.python.org/ftp/python/3.13.17/python-3.13.17-amd64.exe	install-check	/quiet InstallAllUsers=1 TargetDir=C:\Python313 Include_test=0	C:\Python313\python.exe	-c "import ssl, sqlite3, ctypes"	0

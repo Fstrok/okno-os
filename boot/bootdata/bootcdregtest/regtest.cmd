@@ -11,6 +11,12 @@ if "%errorlevel%"=="1" (
     exit 0
 )
 
+:: Okno OS: a test disk with \okno\run.cmd replaces the ReactOS test suite
+for %%d in (D E F G H I) do if exist %%d:\okno\run.cmd (
+    call %%d:\okno\run.cmd %%d:
+    exit /b
+)
+
 move "%WINDIR%\bin\redirtest1.dll" "%WINDIR%\bin\kernel32test_versioned.dll"
 move "%WINDIR%\bin\testdata\redirtest2.dll" "%WINDIR%\bin\testdata\kernel32test_versioned.dll"
 if exist "%WINDIR%\bin\AHKAppTests.cmd" (

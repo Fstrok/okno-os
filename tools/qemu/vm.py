@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Run and drive Okno OS in QEMU for tests.
 
-  vm.py start NAME --arch x86|x64 --iso FILE [--disk FILE] [--data FILE] [--kvm]
+  vm.py start NAME --arch x86|x64 --iso FILE [--disk FILE] [--data FILE] [--kvm] [--install]
+                                 --install: boot the CD once (unattended setup), then the hard disk
   vm.py shot NAME OUT.png        screenshot
   vm.py keys NAME KEY...         QEMU key names (ret, alt-n, meta_l-r, ...); 'sleepN' pauses N seconds
   vm.py type NAME TEXT           type text with the US layout
@@ -36,8 +37,10 @@ def monitor(name, cmd):
 
 
 def start(name, args):
+    flags = {a for a in args if a in ("--kvm", "--install")}
+    args = [a for a in args if a not in flags]
     opts = dict(zip(args[::2], args[1::2]))
-    kvm = "--kvm" in args
+    kvm = "--kvm" in flags
     os.makedirs(VM_DIR, exist_ok=True)
     disk = opts.get("--disk") or path(name, "qcow2")
     if not os.path.exists(disk):
@@ -46,7 +49,9 @@ def start(name, args):
     cmd = [qemu, "-machine", "q35", "-m", "3072", "-smp", "2", "-cpu", "max",
            "-accel", "kvm" if kvm else "tcg,thread=multi",
            "-drive", f"file={disk},if=none,id=d0", "-device", "ide-hd,drive=d0,bus=ide.0",
-           "-drive", f"file={opts['--iso']},media=cdrom,if=none,id=cd", "-device", "ide-cd,drive=cd,bus=ide.2,bootindex=0",
+           "-drive", f"file={opts['--iso']},media=cdrom,if=none,id=cd",
+           "-device", "ide-cd,drive=cd,bus=ide.2" + ("" if "--install" in flags else ",bootindex=0"),
+           *(["-boot", "order=c,once=d"] if "--install" in flags else []),
            "-vga", "std", "-display", "none", "-usb", "-device", "usb-tablet", "-nic", "user,model=e1000",
            "-monitor", f"unix:{path(name, 'mon')},server,nowait", "-serial", f"file:{path(name, 'serial')}"]
     if "--data" in opts:
