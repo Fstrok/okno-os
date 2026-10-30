@@ -6,5 +6,12 @@ python313	x86	https://www.python.org/ftp/python/3.13.17/python-3.13.17.exe	insta
 firefox115esr	x86	https://download.mozilla.org/?product=firefox-esr115-latest-ssl&os=win&lang=en-US	install	/S /InstallDirectoryPath=C:\FF115	C:\FF115\firefox.exe	firefox.exe	60
 firefox	x86	https://download.mozilla.org/?product=firefox-latest-ssl&os=win&lang=en-US	install	/S /InstallDirectoryPath=C:\FF	C:\FF\firefox.exe	firefox.exe	60
 putty64	x64	https://the.earth.li/~sgtatham/putty/latest/w64/putty.exe	run			putty.exe	15
-putty32-on-x64	x64	https://the.earth.li/~sgtatham/putty/latest/w32/putty.exe	run			putty.exe	15
-python313-x64	x64	https://www.python.org/ftp/python/3.13.17/python-3.13.17-amd64.exe	install-check	/quiet InstallAllUsers=1 TargetDir=C:\Python313 Include_test=0	C:\Python313\python.exe	-c "import ssl, sqlite3, ctypes"	0
+7zip64	x64	https://www.7-zip.org/a/7z2605-x64.exe	install	/S	C:\Program Files\7-Zip\7zFM.exe	7zFM.exe	15
+winrar64	x64	https://www.rarlab.com/rar/winrar-x64-723.exe	install	/S	C:\Program Files\WinRAR\WinRAR.exe	WinRAR.exe	15
+git64	x64	https://github.com/git-for-windows/git/releases/download/v2.56.0.windows.4/Git-2.56.0.4-64-bit.exe	install-check	/VERYSILENT /NORESTART /SUPPRESSMSGBOXES /SP-	C:\Program Files\Git\cmd\git.exe	--version	0
+puttymsi64	x64	https://the.earth.li/~sgtatham/putty/latest/w64/putty-64bit-0.85-installer.msi	install	/qn	C:\Program Files\PuTTY\putty.exe	putty.exe	15
+node64	x64	https://nodejs.org/dist/v26.13.0/node-v26.13.0-x64.msi	install-check	/qn	C:\Program Files\nodejs\node.exe	-e "process.exit(0)"	0
+far64	x64	https://www.farmanager.com/files/Far30b6699.x64.20260614.msi	install	/qn	C:\Program Files\Far Manager\Far.exe	Far.exe	15
+keepassxc64	x64	https://github.com/keepassxreboot/keepassxc/releases/download/2.8.0/KeePassXC-2.8.0-x64.msi	install	/qn	C:\Program Files\KeePassXC\KeePassXC.exe	KeePassXC.exe	20
+supermium64	x64	https://github.com/win32ss/supermium/releases/download/v150-r2.01/supermium_150_64_nonsetup.zip	zip		Supermium\chrome.exe	chrome.exe	60
+libreoffice64	x64	https://download.documentfoundation.org/libreoffice/stable/26.8.2/win/x86_64/LibreOffice_26.8.2_Win_x86-64.msi	install	/qn	C:\Program Files\LibreOffice\program\soffice.exe	soffice.bin	60

@@ -17,9 +17,10 @@ apps.tsv columns: name, arch, url, kind, args, exe, check, wait
   run            start the downloaded file with args; PASS if process `check` is alive after `wait` s
   install        run the installer with args and wait; then start `exe`, check process `check`
   install-check  run the installer; then run `exe check` synchronously; PASS if it exits with 0
+  zip            portable app: unpacked on the host, start `exe` (path inside the archive), check process
 Downloads are cached in --cache as <name>.<ext>.
 """
-import argparse, json, os, re, shutil, subprocess, sys, time
+import argparse, json, os, re, shutil, subprocess, sys, time, zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CRASH = re.compile(rb"\*\*\* Fatal System Error")
@@ -54,6 +55,8 @@ def run_cmd(apps):
         launch = f"msiexec /i {file}" if file.endswith('.msi"') else file
         if a["kind"] == "run":
             out.append(f'start "" {launch} {a["args"]}')
+        elif a["kind"] == "zip":
+            out.append(f'start "" "%D%\\okno\\apps\\{n}\\{a["exe"]}" {a["args"]}')
         else:
             out += [f"dbgprint OKNO:INSTALL:{n}", f'start "" /wait {launch} {a["args"]}']
         if a["kind"] == "install-check":
@@ -73,7 +76,7 @@ def run_cmd(apps):
 
 
 def make_disk(path, apps, cache):
-    size = sum(os.path.getsize(os.path.join(cache, a["file"])) for a in apps) + (64 << 20)
+    size = sum(os.path.getsize(os.path.join(cache, a["file"])) * (4 if a["kind"] == "zip" else 1) for a in apps) + (64 << 20)
     size = (size + (1 << 20) - 1) & ~((1 << 20) - 1)
     with open(path, "wb") as f:
         f.truncate(size)
@@ -90,7 +93,14 @@ def make_disk(path, apps, cache):
     open(script, "w", newline="").write(run_cmd(apps))
     subprocess.run(["mcopy", "-i", img, script, "::/okno/run.cmd"], check=True)
     for a in apps:
-        subprocess.run(["mcopy", "-i", img, os.path.join(cache, a["file"]), "::/okno/apps/"], check=True)
+        src = os.path.join(cache, a["file"])
+        if a["kind"] == "zip":
+            unpacked = os.path.join(os.path.dirname(path), "unpacked", a["name"])
+            shutil.rmtree(unpacked, ignore_errors=True)
+            zipfile.ZipFile(src).extractall(unpacked)
+            subprocess.run(["mcopy", "-s", "-i", img, unpacked, "::/okno/apps/"], check=True)
+        else:
+            subprocess.run(["mcopy", "-i", img, src, "::/okno/apps/"], check=True)
 
 
 def main():
