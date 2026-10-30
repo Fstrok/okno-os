@@ -25,6 +25,7 @@ import argparse, json, os, re, shutil, subprocess, sys, time, zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 CRASH = re.compile(rb"\*\*\* Fatal System Error")
 KDB_LIMIT = 10  # debugger stops answered with bt/cont before giving up
+INSTALL_LIMIT = 600  # seconds an installer may run
 
 
 def load_apps(path, arch):
@@ -49,16 +50,25 @@ def fetch(apps, cache):
 
 
 def run_cmd(apps):
-    out = ["@echo off", "set D=%1", "dbgprint OKNO:BEGIN"]
-    for a in apps:
+    out = ["@echo off", "set D=%1",
+           "taskkill /f /im rundll32.exe >nul 2>&1",  # New Hardware Wizard grabs the screen
+           "dbgprint OKNO:BEGIN"]
+    for i, a in enumerate(apps):
         n, file = a["name"], f'"%D%\\okno\\apps\\{a["file"]}"'
         launch = f"msiexec /i {file}" if file.endswith('.msi"') else file
         if a["kind"] == "run":
             out.append(f'start "" {launch} {a["args"]}')
         elif a["kind"] == "zip":
             out.append(f'start "" "%D%\\okno\\apps\\{n}\\{a["exe"]}" {a["args"]}')
-        else:
+        elif file.endswith('.msi"'):
             out += [f"dbgprint OKNO:INSTALL:{n}", f'start "" /wait {launch} {a["args"]}']
+        else:  # installers may stop at a dialog: wait at most INSTALL_LIMIT seconds
+            image = a["file"]
+            out += [f"dbgprint OKNO:INSTALL:{n}", f'start "" {launch} {a["args"]}', "set T=0",
+                    f":wait{i}", "timeout /t 5 /nobreak >nul", "set /a T+=5",
+                    f'tasklist | find /i "{image}" >nul',
+                    f"if not errorlevel 1 if %T% lss {INSTALL_LIMIT} goto wait{i}",
+                    f"taskkill /f /im {image} >nul 2>&1"]
         if a["kind"] == "install-check":
             out += [f'"{a["exe"]}" {a["check"]}',
                     f"if errorlevel 1 (dbgprint OKNO:FAIL:{n}) else (dbgprint OKNO:PASS:{n})"]
