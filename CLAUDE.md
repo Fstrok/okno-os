@@ -55,6 +55,19 @@ tools/qemu/vm.py stop t1
 ```
 
 Машина q35 с дисками AHCI: на стандартном IDE (i440FX) 64-битная сборка падает в pciidex.sys.
+Сетевая карта — `e1000` (q35 по умолчанию даёт e1000e, её драйвера у нас нет).
+
+Автотест программ: `cmake --build build --target bootcdregtest`, затем
+`tools/qemu/apptest.py --arch x86 --iso build/bootcdregtest.iso --apps tools/qemu/apps.tsv --cache <папка> --out <папка> [--kvm]`.
+Система ставится без вопросов, после входа `regtest.cmd` запускает `\okno\run.cmd` с тестового диска;
+результаты — метки `OKNO:*` в журнале COM1 → `results.md`, снимки экрана по каждой программе.
+
+## Перенос DLL из Wine
+
+`WIDL=build/host-tools/bin/widl tools/wine/import_dll.py <исходники Wine> <имя>...` — копирует DLL из Wine
+(текущая версия — 11.20) в `dll/win32/<имя>`, недостающие заголовки — в `sdk/include/psdk`, пишет CMakeLists,
+регистрацию COM и запись в `media/doc/WINESYNC.txt`. Повторный запуск — обновление до новой версии Wine.
+DLL, которые ReactOS ведёт сам (без пометки инструмента в CMakeLists), он не трогает без `--force`.
 
 ## Ответы владельцу
 
