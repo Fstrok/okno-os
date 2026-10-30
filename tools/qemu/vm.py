@@ -7,9 +7,11 @@
   vm.py keys NAME KEY...         QEMU key names (ret, alt-n, meta_l-r, ...); 'sleepN' pauses N seconds
   vm.py type NAME TEXT           type text with the US layout
   vm.py wait NAME REGEX [SECS]   wait until the serial log matches REGEX (exit 1 on timeout)
+  vm.py send NAME TEXT           send TEXT to COM1 (escapes like \\r allowed)
   vm.py stop NAME
 
-State lives in $OKNO_VM_DIR (default ./vm): NAME.mon (monitor socket), NAME.serial (debug log).
+State lives in $OKNO_VM_DIR (default ./vm): NAME.mon (monitor socket), NAME.serial (debug log),
+NAME.sock (COM1 input, e.g. KDBG commands).
 The machine is q35 with AHCI disks: the stock i440FX IDE path crashes x64 builds (pciidex.sys).
 """
 import os, re, socket, subprocess, sys, time
@@ -53,7 +55,10 @@ def start(name, args):
            "-device", "ide-cd,drive=cd,bus=ide.2" + ("" if "--install" in flags else ",bootindex=0"),
            *(["-boot", "order=c,once=d"] if "--install" in flags else []),
            "-vga", "std", "-display", "none", "-usb", "-device", "usb-tablet", "-nic", "user,model=e1000",
-           "-monitor", f"unix:{path(name, 'mon')},server,nowait", "-serial", f"file:{path(name, 'serial')}"]
+           "-monitor", f"unix:{path(name, 'mon')},server,nowait",
+           # COM1 is two-way: KDBG waits for commands there; everything the guest prints goes to NAME.serial
+           "-chardev", f"socket,id=s0,path={path(name, 'sock')},server=on,wait=off,logfile={path(name, 'serial')}",
+           "-serial", "chardev:s0"]
     if "--data" in opts:
         cmd += ["-drive", f"file={opts['--data']},format=raw,if=none,id=d1", "-device", "ide-hd,drive=d1,bus=ide.1"]
     subprocess.Popen(cmd, stdout=open(path(name, "log"), "w"), stderr=subprocess.STDOUT, start_new_session=True)
@@ -62,6 +67,15 @@ def start(name, args):
             return
         time.sleep(0.1)
     sys.exit(open(path(name, "log")).read())
+
+
+def serial_send(name, text):
+    # KDBG polls the UART byte by byte: faster input is lost
+    with socket.socket(socket.AF_UNIX) as s:
+        s.connect(path(name, "sock"))
+        for b in text.encode():
+            s.sendall(bytes([b]))
+            time.sleep(0.1)
 
 
 def shot(name, out):
@@ -108,6 +122,8 @@ if __name__ == "__main__":
         type_text(name, " ".join(rest))
     elif action == "wait":
         wait(name, *rest)
+    elif action == "send":
+        serial_send(name, " ".join(rest).encode().decode("unicode_escape"))
     elif action == "stop":
         monitor(name, "quit")
     else:

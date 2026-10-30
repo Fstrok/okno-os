@@ -45,3 +45,52 @@ jobs:
             build/bootcd.iso
             build/bootcdregtest.iso
           compression-level: 0
+
+  # The toolchain ReactOS itself ships and tests with (RosBE: GCC 8.4 + mingw-w64 v6).
+  # Kept next to clang until the clang builds boot as well as these.
+  build-gcc:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [i386]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get install -y -q ccache texinfo
+
+      - uses: actions/cache@v4
+        id: rosbe
+        with:
+          path: RosBE-CI
+          key: rosbe-${{ runner.os }}-${{ hashFiles('tools/ci/build_rosbe_ci.sh') }}
+
+      - name: Build RosBE
+        if: steps.rosbe.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ../rosbe-work && cd ../rosbe-work
+          bash "$GITHUB_WORKSPACE/tools/ci/build_rosbe_ci.sh" "$GITHUB_WORKSPACE/RosBE-CI"
+          test -x "$GITHUB_WORKSPACE/RosBE-CI/RosBE.sh"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-gcc-${{ matrix.arch }}-${{ github.sha }}
+          restore-keys: ccache-gcc-${{ matrix.arch }}-
+
+      - name: Build
+        run: |
+          set -o pipefail
+          echo "cmake -S $PWD -B $PWD/build -G Ninja -DCMAKE_TOOLCHAIN_FILE:FILEPATH=toolchain-gcc.cmake -DARCH:STRING=${{ matrix.arch }} -DCMAKE_BUILD_TYPE=Debug -DENABLE_CCACHE=1" | RosBE-CI/RosBE.sh . 0 ${{ matrix.arch }}
+          echo "cmake --build $PWD/build -- -k0" | RosBE-CI/RosBE.sh . 0 ${{ matrix.arch }}
+          echo "cmake --build $PWD/build --target bootcd bootcdregtest" | RosBE-CI/RosBE.sh . 0 ${{ matrix.arch }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: okno-gcc-${{ matrix.arch }}
+          path: |
+            build/bootcd.iso
+            build/bootcdregtest.iso
+          compression-level: 0

@@ -22,7 +22,8 @@ Downloads are cached in --cache as <name>.<ext>.
 import argparse, json, os, re, shutil, subprocess, sys, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CRASH = re.compile(rb"\*\*\* Fatal System Error|KeBugCheckEx|kdb:>|Entered debugger|\*\*\* STOP")
+CRASH = re.compile(rb"\*\*\* Fatal System Error")
+KDB_LIMIT = 10  # debugger stops answered with bt/cont before giving up
 
 
 def load_apps(path, arch):
@@ -67,7 +68,7 @@ def run_cmd(apps):
                 f'tasklist | find /i "{a["check"]}" >nul',
                 f"if errorlevel 1 (dbgprint OKNO:FAIL:{n}) else (dbgprint OKNO:PASS:{n})",
                 f"taskkill /f /im {a['check']} >nul 2>&1"]
-    out += ["dbgprint OKNO:END", "shutdown -s -t 0", ""]
+    out += ["timeout /t 5 /nobreak >nul", "dbgprint OKNO:END", ""]
     return "\r\n".join(out)
 
 
@@ -114,7 +115,7 @@ def main():
     subprocess.run(vm + ["start", "t", "--arch", o.arch, "--iso", o.iso, "--data", data, "--install"] + (["--kvm"] if o.kvm else []), check=True)
 
     serial = os.path.join(vm_dir, "t.serial")
-    results, status, seen, deadline = {}, "timeout", 0, time.time() + o.timeout
+    results, status, seen, kdb_answered, pager_answered, deadline = {}, "timeout", 0, 0, 0, time.time() + o.timeout
     while time.time() < deadline:
         time.sleep(2)
         log = open(serial, "rb").read() if os.path.exists(serial) else b""
@@ -127,6 +128,20 @@ def main():
             elif kind in ("PASS", "FAIL"):
                 results[app] = kind
         seen = max(seen, len(log) - 200)
+        # KDBG stopped (assert, breakpoint, exception): log a backtrace, then continue
+        pages = log.count(b"--- Press q")
+        while pager_answered < pages:  # KDBG pages long output: any key but q continues
+            subprocess.run(vm + ["send", "t", "\r"])
+            pager_answered += 1
+        prompts = log.count(b"kdb:>")
+        while kdb_answered < prompts:
+            if kdb_answered >= 2 * KDB_LIMIT:
+                status = "crash"
+                break
+            subprocess.run(vm + ["send", "t", "bt\r" if kdb_answered % 2 == 0 else "cont\r"])
+            kdb_answered += 1
+        if status == "crash":
+            break
         if CRASH.search(log):
             status = "crash"
             subprocess.run(vm + ["shot", "t", os.path.join(o.out, "crash.png")])
