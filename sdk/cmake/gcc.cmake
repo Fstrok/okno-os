@@ -139,6 +139,13 @@ elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang")
         add_compile_options(-fno-builtin-stpcpy)
     endif()
 
+    if(CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 16)
+        # Clang 16+ treats passing an uninitialized value as undefined behavior
+        # (noundef parameters) and deletes such paths; this code base relies on the
+        # older semantics (e.g. RtlInsertElementGenericTable on an empty table)
+        add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:-Xclang=-no-enable-noundef-analysis>")
+    endif()
+
     set(CMAKE_LINK_DEF_FILE_FLAG "")
     set(CMAKE_STATIC_LIBRARY_SUFFIX ".a")
     set(CMAKE_LINK_LIBRARY_SUFFIX "")

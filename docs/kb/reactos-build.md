@@ -77,6 +77,17 @@ Audited 2026-10-29.
 
 ---
 
+## 1a. Clang 16+ pitfalls found in practice (Okno, 2026-10-30)
+
+| Symptom | Cause | Fix in tree |
+|---|---|---|
+| `undefined reference to _alloca` (i386) | clang for i686-w64-mingw32 emits stack probes as calls to `_alloca` | alias `__alloca` in `sdk/lib/crt/except/i386/chkstk_asm.s` |
+| `undefined reference to sqrtf/ceilf` (i386, UCRT modules) | clang does not inline `gnu_inline` bodies of library builtins; x86 ucrtbase does not export float math | `crtmathf` static lib (`sdk/lib/crt/math/i386/mathf_ool.c`) linked via `vcstartup` |
+| `definition of builtin function _mm_getcsr` | clang 18 knows these as MS header builtins, `__has_builtin` says no | guard in `sdk/include/vcruntime/xmmintrin.h` |
+| C++ link errors `__gxx_personality_sj0` | Ubuntu mingw uses DWARF-2 exceptions, RosBE uses SJLJ | model auto-detected in `sdk/cmake/gcc.cmake` |
+| **BSOD 0x23 (FAT_FILE_SYSTEM) on any FAT mount**, page fault at 0x18 in `MiSectionPageTableCompare` | clang 16+ marks parameters `noundef`; `RtlInsertElementGenericTable` passes `NodeOrParent` that the empty-tree path never set, so clang deleted the empty-tree check | `-Xclang=-no-enable-noundef-analysis` (C/C++ only) for clang ≥ 16 (`sdk/cmake/gcc.cmake`) + `*NodeOrParent = NULL` in `generictable.c`. Expect more code with the same pattern: keep the flag |
+| Implicit function declaration errors | clang 16+ makes them errors | declare the function (e.g. `ZwQueryInformationProcess` in btrfs) |
+
 ## 2. CI recipe
 
 ### 2.1 What upstream CI does (`.github/workflows/build.yml`) [code]
