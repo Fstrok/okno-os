@@ -36,12 +36,12 @@ jobs:
         run: cmake --build build -- -k0
 
       - name: ISO
-        run: cmake --build build --target bootcd
+        run: cmake --build build --target bootcd bootcdregtest
 
       - uses: actions/upload-artifact@v4
         with:
           name: okno-${{ matrix.arch }}
           path: |
             build/bootcd.iso
-            build/livecd.iso
+            build/bootcdregtest.iso
           compression-level: 0
