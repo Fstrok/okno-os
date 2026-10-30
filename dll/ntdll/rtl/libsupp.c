@@ -1014,44 +1014,9 @@ RtlDosApplyFileIsolationRedirection_Ustr(IN ULONG Flags,
 static DWORD
 LdrpApisetVersion(VOID)
 {
-    static DWORD CachedApisetVersion = ~0u;
-
-    if (CachedApisetVersion == ~0u)
-    {
-        DWORD CompatVersion = RosGetProcessCompatVersion();
-
-        switch (CompatVersion)
-        {
-            case 0:
-                break;
-            case _WIN32_WINNT_VISTA:
-                /* No apisets in vista yet*/
-                CachedApisetVersion = 0;
-                break;
-            case _WIN32_WINNT_WIN7:
-                CachedApisetVersion = APISET_WIN7;
-                DPRINT1("Activating apisets for Win7\n");
-                break;
-            case _WIN32_WINNT_WIN8:
-                CachedApisetVersion = APISET_WIN8;
-                DPRINT1("Activating apisets for Win8\n");
-                break;
-            case _WIN32_WINNT_WINBLUE:
-                CachedApisetVersion = APISET_WIN81;
-                DPRINT1("Activating apisets for Win8.1\n");
-                break;
-            case _WIN32_WINNT_WIN10:
-                CachedApisetVersion = APISET_WIN10;
-                DPRINT1("Activating apisets for Win10\n");
-                break;
-            default:
-                DPRINT1("Unknown version 0x%x\n", CompatVersion);
-                CachedApisetVersion = 0;
-                break;
-        }
-    }
-
-    return CachedApisetVersion;
+    /* Okno: like Windows 10, the API set schema applies to every process,
+       whatever OS versions its manifest declares */
+    return APISET_WIN7 | APISET_WIN8 | APISET_WIN81 | APISET_WIN10;
 }
 
 NTSYSAPI
